@@ -1,0 +1,198 @@
+<div class="c_addon-selected-main">
+    <div class="c_addon-selected-heading">
+      <h2>KIES JE FAVORIETE KLEUREN:</h2>
+      <p>
+        <span class="c_addon-selected-counting">0</span> van de
+        <span class="c_addon-selected-counted">6</span> geselecteerd
+      </p>
+    </div>
+    <div class="c_addon-selected">
+      <!-- Empty slots for user selections -->
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+      <div class="c_addon-selected-a c_addon-selected-empty" data-id=""></div>
+    </div>
+    <div class="c_addon-pro-main">
+      <div class="c_addon-pro-container">
+        <div class="c_addon-pro">
+          <!-- Variants dynamically generated -->
+          {% for variant in product.variants %}
+          <div class="c_addon-pro-a" data-id="{{ variant.id }}" data-type="polygel">
+            <div class="c_addon-pro-inner">
+              <div class="c_addon-pro-img">
+                <img src="{{ variant.featured_image | img_url: '400x400' }}" alt="{{ variant.option1 }}">
+              </div>
+              <h2>{{ variant.option1 }}</h2>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <button id="add-to-cart">IN WINKELWAGEN</button>
+  
+  <style>
+  .c_addon-selected-main {
+    overflow: auto;
+    margin: 0px;
+  }
+  
+  .c_addon-selected {
+    display: flex;
+    padding: 10px 0;
+  }
+  
+  .c_addon-selected-a {
+    width: 100px;
+    height: 100px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    position: relative;
+  }
+  
+  .c_addon-selected-a img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  .c_addon-pro-main {
+    border: 1px solid #dfdfdf;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  
+  .c_addon-pro-container {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .c_addon-pro {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .c_addon-pro-a {
+    width: 25%;
+    padding: 10px 5px;
+    cursor: pointer;
+  }
+  
+  .c_addon-pro-img {
+    position: relative;
+    padding-bottom: 80%;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+  }
+  
+  .c_addon-pro-a.selected {
+    border: 2px solid black;
+  }
+  
+  #add-to-cart {
+    padding: 10px 20px;
+    background-color: #f08;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  
+  #add-to-cart:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  </style>
+  
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const maxSelection = 6;
+    let selectedColors = [];
+  
+    // Handle selection
+    function updateSelectedSlots() {
+      const slots = document.querySelectorAll(".c_addon-selected-a");
+      slots.forEach((slot, index) => {
+        slot.innerHTML = "";
+        if (selectedColors[index]) {
+          const selectedItem = document.querySelector(
+            `.c_addon-pro-a[data-id="${selectedColors[index]}"]`
+          );
+          const img = selectedItem.querySelector("img").cloneNode();
+          slot.appendChild(img);
+        }
+      });
+  
+      // Update the count
+      document.querySelector(".c_addon-selected-counting").textContent =
+        selectedColors.length;
+  
+      // Enable/Disable the Add to Cart button
+      document.querySelector("#add-to-cart").disabled =
+        selectedColors.length !== maxSelection;
+    }
+  
+    document.querySelectorAll(".c_addon-pro-a").forEach((item) => {
+      item.addEventListener("click", function () {
+        const variantId = this.getAttribute("data-id");
+        const isSelected = selectedColors.includes(variantId);
+  
+        if (isSelected) {
+          // Deselect
+          selectedColors = selectedColors.filter((id) => id !== variantId);
+          this.classList.remove("selected");
+        } else if (selectedColors.length < maxSelection) {
+          // Select
+          selectedColors.push(variantId);
+          this.classList.add("selected");
+        } else {
+          alert("Je kunt maximaal 6 kleuren selecteren.");
+        }
+  
+        updateSelectedSlots();
+      });
+    });
+  
+    // Add to Cart functionality
+    document.querySelector("#add-to-cart").addEventListener("click", function () {
+      if (selectedColors.length === maxSelection) {
+        const formData = {
+          items: selectedColors.map((id) => ({ id: parseInt(id), quantity: 1 })),
+        };
+  
+        fetch("/cart/add.js", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        })
+          .then((response) => response.json())
+          .then(() => {
+            window.location.href = "/cart";
+          })
+          .catch((error) => {
+            console.error("Error adding to cart:", error);
+            alert("Er is iets misgegaan. Probeer het opnieuw.");
+          });
+      } else {
+        alert("Kies precies 6 kleuren.");
+      }
+    });
+  
+    // Initialize disabled Add to Cart button
+    document.querySelector("#add-to-cart").disabled = true;
+  });
+  </script>
+  
